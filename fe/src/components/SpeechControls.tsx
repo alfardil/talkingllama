@@ -1,12 +1,12 @@
-import React from "react";
+import { Loader2, Mic, MicOff, Send } from "lucide-react";
 import { Button } from "./ui/button";
-import { Mic, MicOff, Send } from "lucide-react";
 
 interface SpeechControlsProps {
   isListening: boolean;
   onToggleListening: () => void;
   onSubmit: () => void;
   canSubmit: boolean;
+  isLoading?: boolean;
 }
 
 export function SpeechControls({
@@ -14,6 +14,7 @@ export function SpeechControls({
   onToggleListening,
   onSubmit,
   canSubmit,
+  isLoading = false,
 }: SpeechControlsProps) {
   return (
     <div className="flex justify-center gap-4">
@@ -25,6 +26,7 @@ export function SpeechControls({
             ? "bg-red-500 hover:bg-red-600"
             : "bg-blue-500 hover:bg-blue-600"
         }
+        disabled={isLoading}
       >
         {isListening ? (
           <>
@@ -40,16 +42,25 @@ export function SpeechControls({
       </Button>
       <Button
         onClick={onSubmit}
-        disabled={!canSubmit}
+        disabled={!canSubmit || isLoading}
         variant="default"
         className={
-          !canSubmit
+          !canSubmit || isLoading
             ? "bg-gray-400 cursor-not-allowed"
             : "bg-green-500 hover:bg-green-600"
         }
       >
-        <Send className="mr-2" />
-        Send
+        {isLoading ? (
+          <>
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            Processing...
+          </>
+        ) : (
+          <>
+            <Send className="mr-2" />
+            Send
+          </>
+        )}
       </Button>
     </div>
   );

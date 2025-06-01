@@ -6,6 +6,7 @@ import os
 from typing import Optional
 from dotenv import load_dotenv
 import json
+import re
 
 # Load environment variables from .env file
 load_dotenv()
@@ -28,33 +29,34 @@ app.add_middleware(
 # Include routers
 app.include_router(health_router)
 
-def load_and_truncate_context(file_path: str, max_chars: int = 4000) -> str:
+def load_and_truncate_context(file_path: str) -> str:
     try:
         data = []
         with open(file_path, 'r') as f:
             for line in f:
                 try:
                     obj = json.loads(line)
-                    # Extract assistant messages
-                    assistant_messages = [msg['content'] for msg in obj['messages'] if msg['role'] == 'assistant']
-                    data.extend(assistant_messages)
+                    # Extract messages with their roles for better context
+                    messages = []
+                    for msg in obj['messages']:
+                        role = msg.get('role', '')
+                        content = msg.get('content', '')
+                        if role and content:
+                            messages.append(f"{role}: {content}")
+                    data.extend(messages)
                 except json.JSONDecodeError:
                     continue
                 except KeyError:
                     continue
         
-        # Combine all messages
-        combined_context = "\n".join(data)
+        # Combine all messages with proper spacing
+        combined_context = "\n\n".join(data)
         
-        # Clean up the text
-        cleaned_context = combined_context.replace('\\n', ' ')  # Replace \n with space
-        cleaned_context = cleaned_context.replace('*', '')      # Remove asterisks
-        cleaned_context = cleaned_context.replace('\\', '')     # Remove backslashes
-        cleaned_context = ' '.join(cleaned_context.split())     # Normalize whitespace
-        
-        # Truncate if too long
-        if len(cleaned_context) > max_chars:
-            cleaned_context = cleaned_context[:max_chars] + "..."
+        # Clean up the text while preserving important formatting
+        cleaned_context = combined_context.replace('\\n', '\n')  # Preserve actual newlines
+        cleaned_context = cleaned_context.replace('\\', '')      # Remove escape characters
+        cleaned_context = re.sub(r'\s+', ' ', cleaned_context)  # Normalize whitespace
+        cleaned_context = cleaned_context.strip()                # Remove leading/trailing whitespace
             
         return cleaned_context
     except Exception as e:
@@ -65,18 +67,16 @@ def load_and_truncate_context(file_path: str, max_chars: int = 4000) -> str:
 current_dir = os.path.dirname(os.path.abspath(__file__))
 jsonl_path = os.path.join(current_dir, 'finetune_data.jsonl')
 
-# Load and truncate the context
+# Load the context
 context = load_and_truncate_context(jsonl_path)
 
 SYSTEM_PROMPT_1 = f"""
-Here is some context that defines a man named Maheen's life experiences based on several journal entries:
+Here is the complete context from the journal entries:
 
 {context}
 
-Make sure to get rid of any unusual characters that may be present in the context such as '\n' or '*'. 
-
-Please use this context to help understand and respond to the any questions in a way that matches this person's speaking style and knowledge.
-Make sure to emphasize the personality points of him being nonchalant, funny, and friends oriented.
+Please use this context to help understand and respond to any questions in a way that matches this person's speaking style and knowledge.
+Make sure to emphasize the personality points of being chill, funny, and friends oriented.
 """
 
 @app.get("/")
