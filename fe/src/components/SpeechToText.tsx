@@ -74,7 +74,7 @@ export function SpeechToText() {
           alt="Maheen"
           className="w-24 h-24 rounded-full object-cover border-4 border-main shadow-shadow"
         />
-        <h1 className="text-3xl font-bold text-main">Talk To Maheen!</h1>
+        <h1 className="text-3xl font-bold text-black">Talk To Maheen!</h1>
       </div>
 
       <SpeechToTextCard
