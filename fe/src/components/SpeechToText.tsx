@@ -1,5 +1,5 @@
-import React, { useState } from "react";
 import { Mic, MicOff, Send } from "lucide-react";
+import { useState } from "react";
 import SpeechRecognition, {
   useSpeechRecognition,
 } from "react-speech-recognition";
@@ -7,6 +7,8 @@ import SpeechRecognition, {
 export function SpeechToText() {
   const [isListening, setIsListening] = useState(false);
   const [manualText, setManualText] = useState("");
+  const [response, setResponse] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
 
   const { transcript, resetTranscript, browserSupportsSpeechRecognition } =
     useSpeechRecognition();
@@ -29,14 +31,33 @@ export function SpeechToText() {
     const textToSend = manualText || transcript;
     if (!textToSend.trim()) return;
 
+    setIsLoading(true);
     try {
-      // TODO: Implement backend API call
-      console.log("Sending text to backend:", textToSend);
+      const response = await fetch('http://localhost:8000/api/llama/voice', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          text: textToSend
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to get response from server');
+      }
+
+      const data = await response.json();
+      setResponse(data.response);
+      
       // Reset both transcript and manual text after successful submission
       resetTranscript();
       setManualText("");
     } catch (error) {
       console.error("Error sending text:", error);
+      setResponse("Sorry, there was an error processing your request.");
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -78,17 +99,24 @@ export function SpeechToText() {
 
           <button
             onClick={handleSubmit}
-            disabled={!manualText && !transcript}
+            disabled={(!manualText && !transcript) || isLoading}
             className={`flex items-center px-6 py-3 rounded-full text-white font-semibold transition-colors ${
-              !manualText && !transcript
+              (!manualText && !transcript) || isLoading
                 ? "bg-gray-400 cursor-not-allowed"
                 : "bg-green-500 hover:bg-green-600"
             }`}
           >
             <Send className="mr-2" />
-            Send
+            {isLoading ? "Sending..." : "Send"}
           </button>
         </div>
+
+        {response && (
+          <div className="mt-6 p-4 bg-gray-50 rounded-lg">
+            <h2 className="text-lg font-semibold mb-2">Response:</h2>
+            <p className="text-gray-700">{response}</p>
+          </div>
+        )}
       </div>
     </div>
   );
