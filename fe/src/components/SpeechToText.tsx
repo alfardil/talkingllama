@@ -1,8 +1,10 @@
 import React, { useState } from "react";
-import { Mic, MicOff, Send } from "lucide-react";
 import SpeechRecognition, {
   useSpeechRecognition,
 } from "react-speech-recognition";
+import { SpeechToTextCard } from "./SpeechToTextCard";
+import { SpeechTextarea } from "./SpeechTextarea";
+import { SpeechControls } from "./SpeechControls";
 
 export function SpeechToText() {
   const [isListening, setIsListening] = useState(false);
@@ -41,55 +43,28 @@ export function SpeechToText() {
   };
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 p-4">
-      <div className="w-full max-w-2xl bg-white rounded-lg shadow-lg p-6">
-        <h1 className="text-2xl font-bold text-center mb-6">Speech to Text</h1>
-
-        <div className="mb-6">
-          <textarea
-            value={manualText || transcript}
-            onChange={(e) => setManualText(e.target.value)}
-            className="w-full h-48 p-4 border rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
-            placeholder="Type or speak your message here..."
+    <div
+      className="flex flex-col items-center justify-center min-h-screen"
+      style={{ background: "#CCFAF2" }}
+    >
+      <SpeechToTextCard
+        title="Speech to Text"
+        footer={
+          <SpeechControls
+            isListening={isListening}
+            onToggleListening={toggleListening}
+            onSubmit={handleSubmit}
+            canSubmit={!!manualText || !!transcript}
           />
-        </div>
-
-        <div className="flex justify-center gap-4">
-          <button
-            onClick={toggleListening}
-            className={`flex items-center px-6 py-3 rounded-full text-white font-semibold transition-colors ${
-              isListening
-                ? "bg-red-500 hover:bg-red-600"
-                : "bg-blue-500 hover:bg-blue-600"
-            }`}
-          >
-            {isListening ? (
-              <>
-                <MicOff className="mr-2" />
-                Stop Recording
-              </>
-            ) : (
-              <>
-                <Mic className="mr-2" />
-                Start Recording
-              </>
-            )}
-          </button>
-
-          <button
-            onClick={handleSubmit}
-            disabled={!manualText && !transcript}
-            className={`flex items-center px-6 py-3 rounded-full text-white font-semibold transition-colors ${
-              !manualText && !transcript
-                ? "bg-gray-400 cursor-not-allowed"
-                : "bg-green-500 hover:bg-green-600"
-            }`}
-          >
-            <Send className="mr-2" />
-            Send
-          </button>
-        </div>
-      </div>
+        }
+      >
+        <SpeechTextarea
+          value={manualText || transcript}
+          onChange={(e) => setManualText(e.target.value)}
+          placeholder="Type or speak your message here..."
+          className="h-48"
+        />
+      </SpeechToTextCard>
     </div>
   );
 }
