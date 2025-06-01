@@ -1,6 +1,6 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from app.routers import health
+from app.routers.health import router as health_router
 from llama_api_client import LlamaAPIClient
 import os
 from typing import Optional
@@ -26,7 +26,7 @@ app.add_middleware(
 )
 
 # Include routers
-app.include_router(health.router)
+app.include_router(health_router)
 
 def load_and_truncate_context(file_path: str, max_chars: int = 4000) -> str:
     try:
@@ -61,8 +61,12 @@ def load_and_truncate_context(file_path: str, max_chars: int = 4000) -> str:
         print(f"Error loading context: {str(e)}")
         return ""
 
+# Get the absolute path to the finetune_data.jsonl file
+current_dir = os.path.dirname(os.path.abspath(__file__))
+jsonl_path = os.path.join(current_dir, 'finetune_data.jsonl')
+
 # Load and truncate the context
-context = load_and_truncate_context('finetune_data.jsonl')
+context = load_and_truncate_context(jsonl_path)
 
 SYSTEM_PROMPT_1 = f"""
 Here is some context that defines a man named Maheen's life experiences based on several journal entries:
@@ -70,7 +74,6 @@ Here is some context that defines a man named Maheen's life experiences based on
 {context}
 
 Make sure to get rid of any unusual characters that may be present in the context such as '\n' or '*'. 
-
 
 Please use this context to help understand and respond to the any questions in a way that matches this person's speaking style and knowledge.
 Make sure to emphasize the personality points of him being nonchalant, funny, and friends oriented.
@@ -83,6 +86,7 @@ async def root():
         "authors": "Al, Maheen, Abid, Talha"
     }
 
+# trained the api i guess? lol
 @app.get("/api/llama/context")
 async def llama(question: str = "Why do you journal?"):
     api_key = os.environ.get("LLAMA_API_KEY")
@@ -115,6 +119,8 @@ async def llama(question: str = "Why do you journal?"):
             status_code=500,
             detail=f"Error calling Llama API: {str(e)}"
         )
+    
+
 
 if __name__ == "__main__":
     import uvicorn
