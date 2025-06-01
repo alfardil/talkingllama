@@ -33,7 +33,7 @@ app.include_router(health_router)
 class VoiceInput(BaseModel):
     text: str
 
-def load_and_truncate_context(file_path: str, max_chars: int = 4000) -> str:
+def load_and_truncate_context(file_path: str) -> str:
     try:
         data = []
         with open(file_path, 'r') as f:
@@ -57,10 +57,6 @@ def load_and_truncate_context(file_path: str, max_chars: int = 4000) -> str:
         cleaned_context = cleaned_context.replace('\\', '')     # Remove backslashes
         cleaned_context = ' '.join(cleaned_context.split())     # Normalize whitespace
         
-        # Truncate if too long
-        if len(cleaned_context) > max_chars:
-            cleaned_context = cleaned_context[:max_chars] + "..."
-            
         return cleaned_context
     except Exception as e:
         print(f"Error loading context: {str(e)}")
