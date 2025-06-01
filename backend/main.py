@@ -6,7 +6,6 @@ import os
 from typing import Optional
 from dotenv import load_dotenv
 import json
-from pydantic import BaseModel
 
 # Load environment variables from .env file
 load_dotenv()
@@ -29,11 +28,7 @@ app.add_middleware(
 # Include routers
 app.include_router(health_router)
 
-# Define request model for voice input
-class VoiceInput(BaseModel):
-    text: str
-
-def load_and_truncate_context(file_path: str) -> str:
+def load_and_truncate_context(file_path: str, max_chars: int = 4000) -> str:
     try:
         data = []
         with open(file_path, 'r') as f:
@@ -57,6 +52,10 @@ def load_and_truncate_context(file_path: str) -> str:
         cleaned_context = cleaned_context.replace('\\', '')     # Remove backslashes
         cleaned_context = ' '.join(cleaned_context.split())     # Normalize whitespace
         
+        # Truncate if too long
+        if len(cleaned_context) > max_chars:
+            cleaned_context = cleaned_context[:max_chars] + "..."
+            
         return cleaned_context
     except Exception as e:
         print(f"Error loading context: {str(e)}")
@@ -120,50 +119,8 @@ async def llama(question: str = "Why do you journal?"):
             status_code=500,
             detail=f"Error calling Llama API: {str(e)}"
         )
+    
 
-@app.post("/api/llama/voice")
-async def handle_voice_input(voice_input: VoiceInput):
-    api_key = os.environ.get("LLAMA_API_KEY")
-    if not api_key:
-        raise HTTPException(
-            status_code=500,
-            detail="LLAMA_API_KEY environment variable is not set"
-        )
-
-    try:
-        client = LlamaAPIClient(api_key=api_key)
-        
-        # Create a prompt that emphasizes natural conversation
-        system_prompt = f"""
-        {SYSTEM_PROMPT_1}
-        
-        The user has just spoken this text through voice input. Respond in a natural, conversational way
-        that matches the personality described in the context. Keep responses concise and engaging.
-        """
-        
-        completion = client.chat.completions.create(
-            model="Llama-4-Maverick-17B-128E-Instruct-FP8",
-            messages=[
-                {
-                    "role": "system",
-                    "content": system_prompt
-                },
-                {
-                    "role": "user",
-                    "content": voice_input.text,
-                }
-            ],
-        )
-        
-        return {
-            "response": completion.completion_message.content.text,
-            "original_input": voice_input.text
-        }
-    except Exception as e:
-        raise HTTPException(
-            status_code=500,
-            detail=f"Error processing voice input: {str(e)}"
-        )
 
 if __name__ == "__main__":
     import uvicorn
