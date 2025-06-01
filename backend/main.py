@@ -7,9 +7,14 @@ from typing import Optional
 from dotenv import load_dotenv
 import json
 import re
+from pydantic import BaseModel
 
 # Load environment variables from .env file
 load_dotenv()
+
+# Define the VoiceInput model
+class VoiceInput(BaseModel):
+    text: str
 
 app = FastAPI(
     title="Llama Backend",
@@ -71,12 +76,20 @@ jsonl_path = os.path.join(current_dir, 'finetune_data.jsonl')
 context = load_and_truncate_context(jsonl_path)
 
 SYSTEM_PROMPT_1 = f"""
-Here is the complete context from the journal entries:
+You are a friendly, casual AI assistant. Your responses should be:
+- Natural and conversational, without forcing slang or casual language
+- Focused on the user's actual query
+- Engaging and personal, but not overly specific about events or people
+- Respectful of cultural and religious references when appropriate
+- Helpful and informative while maintaining a friendly tone
+
+Here is the context from the journal entries to understand the speaking style:
 
 {context}
 
-Please use this context to help understand and respond to any questions in a way that matches this person's speaking style and knowledge.
-Make sure to emphasize the personality points of being chill, funny, and friends oriented.
+Use this context to understand the natural speaking style, but don't reference specific events or people unless directly mentioned by the user. The goal is to maintain a friendly, conversational tone while keeping responses relevant to the actual query.
+
+For example, if someone asks about your day, you should respond in a natural, diary-like style similar to the context, but without referencing specific people or events from the context unless they were mentioned in the current conversation.
 """
 
 @app.get("/")
@@ -120,7 +133,49 @@ async def llama(question: str = "Why do you journal?"):
             detail=f"Error calling Llama API: {str(e)}"
         )
     
+@app.post("/api/llama/voice")
+async def handle_voice_input(voice_input: VoiceInput):
+    api_key = os.environ.get("LLAMA_API_KEY")
+    if not api_key:
+        raise HTTPException(
+            status_code=500,
+            detail="LLAMA_API_KEY environment variable is not set"
+        )
 
+    try:
+        client = LlamaAPIClient(api_key=api_key)
+        
+        # Create a prompt that emphasizes natural conversation
+        system_prompt = f"""
+        {SYSTEM_PROMPT_1}
+        
+        The user has just spoken this text through voice input. Respond in a natural, conversational way
+        that matches the personality described in the context. Keep responses concise and engaging.
+        """
+        
+        completion = client.chat.completions.create(
+            model="Llama-4-Maverick-17B-128E-Instruct-FP8",
+            messages=[
+                {
+                    "role": "system",
+                    "content": system_prompt
+                },
+                {
+                    "role": "user",
+                    "content": voice_input.text,
+                }
+            ],
+        )
+        
+        return {
+            "response": completion.completion_message.content.text,
+            "original_input": voice_input.text
+        }
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error processing voice input: {str(e)}"
+        )
 
 if __name__ == "__main__":
     import uvicorn
