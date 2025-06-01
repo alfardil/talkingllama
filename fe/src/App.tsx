@@ -9,7 +9,7 @@ function App() {
         <div className="flex flex-col lg:flex-row gap-6">
           {/* Left side - Speech/Text Input */}
           <div className="w-full lg:w-1/2">
-            <SpeechToText />
+      <SpeechToText />
           </div>
           
           {/* Right side - Video Chat */}
@@ -17,7 +17,7 @@ function App() {
             <MaheenVideo />
           </div>
         </div>
-        <Toaster />
+      <Toaster />
       </div>
     </div>
   );
