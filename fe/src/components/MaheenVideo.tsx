@@ -34,20 +34,11 @@ export function MaheenVideo() {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            replica_id: "rde70ddba503",
-            persona_id: "p4e554a2c831",
+            replica_id: "r38dd8edb9bd",
+            persona_id: "p8cbd342e6fd",
             conversation_name: "Chat with Maheen",
             conversational_context: context,
-            custom_greeting: "Hey! How's it going? I'm Maheen, nice to meet you!",
-            properties: {
-              max_call_duration: 3600,
-              participant_left_timeout: 60,
-              participant_absent_timeout: 300,
-              enable_recording: true,
-              enable_closed_captions: true,
-              apply_greenscreen: true,
-              language: "english"
-            }
+            custom_greeting: "Hi I'm Maheen! Wait a second, you look familiar."
           }),
         });
         if (!response.ok) {

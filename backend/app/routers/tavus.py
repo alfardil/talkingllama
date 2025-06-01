@@ -42,10 +42,12 @@ async def create_conversation(request: ConversationRequest):
     }
 
     try:
+        payload = request.dict(exclude_none=True)
+        print("[TAVUS DEBUG] Payload to Tavus conversations endpoint:", payload)
         response = requests.post(
             "https://tavusapi.com/v2/conversations",
             headers=headers,
-            json=request.dict(exclude_none=True)
+            json=payload
         )
         response.raise_for_status()
         return response.json()
